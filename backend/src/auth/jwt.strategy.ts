@@ -2,11 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import * as jwksRsa from 'jwks-rsa';
+import { UserService } from '@user/user.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor() {
-    console.log("BACKEND_ISSUER_BASE_URL: ", process.env.BACKEND_ISSUER_BASE_URL)
+  constructor(private readonly userService: UserService) {
+    console.log('BACKEND_ISSUER_BASE_URL: ', process.env.BACKEND_ISSUER_BASE_URL);
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       secretOrKeyProvider: jwksRsa.passportJwtSecret({
@@ -22,6 +23,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
+    // create or update user record on every validated token
+    try {
+      await this.userService.createUserFromAuth0Payload(payload);
+    } catch (e) {
+      // don't block auth if DB upsert fails; log if needed
+      console.error('Failed to upsert user from auth payload:', e);
+    }
+
     return payload;
   }
 }

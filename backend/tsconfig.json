@@ -19,7 +19,8 @@
       "@user/*": ["src/user/*"],
       "@wol/*": ["src/wol-connection/*"],
       "@auth/*": ["src/auth/*"],
-      "@utils/*": ["src/utils/*"]
+      "@utils/*": ["src/utils/*"],
+      "@prisma/*": ["prisma/*"]
     },
     "incremental": true,
     "skipLibCheck": true,
