@@ -21,4 +21,18 @@ export class UserRepository {
         throw error;
     }
   }
+  async getUserByAuth0Id(auth0Id: string): Promise<UserEntity | null> {
+    try{
+      const user =  await this.prismaService.user.findUnique({
+          where: { auth0Id },
+      });
+      if (!user) {
+          return null;
+      }
+      return new UserEntity(user);
+    } catch (error) {
+        console.log('Error fetching user by auth0Id in repository: ', error);
+        throw error;
+    }
+  }
 }

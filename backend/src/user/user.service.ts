@@ -7,8 +7,19 @@ import { UserEntity } from './user.entity';
 export class UserService {
   constructor(private readonly userRepository: UserRepository) { }
 
-  getDevices(): string {
-    return 'User Devices';
+  async getUserByAuth0Id(auth0Id: string): Promise<UserEntity | null> {
+    console.log('Fetching user by auth0Id: ', auth0Id);
+    try{
+      const user: UserEntity | null = await this.userRepository.getUserByAuth0Id(auth0Id);
+      if(!user){
+        console.log('No user found with auth0Id: ', auth0Id);
+        return null;
+      }
+      return user;
+    } catch (error) {
+        console.log('Error in service fetching user by auth0Id: ', error);
+        throw error;
+    }
   }
   async createOrUpdateUser(userData: any) {
     console.log('Creating/updating user with data: ', userData);

@@ -3,10 +3,12 @@ import { DeviceController } from '@device/device.controller';
 import { DeviceService } from '@device/device.service';
 import { PrismaModule } from 'prisma/prisma.module';
 import { DeviceRepository } from './device.repository';
+import { UserModule } from '@user/user.module';
 
 @Module({
     imports: [
-        PrismaModule],
+        PrismaModule,
+        UserModule],
     controllers: [DeviceController],
     providers: [DeviceService, DeviceRepository],
     exports: [DeviceService]

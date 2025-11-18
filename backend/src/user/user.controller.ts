@@ -9,14 +9,23 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Get()
-  getProfile(@AuthUser() user) {
-    console.log("user: ", user)
-    return user;
+  async getProfile(@AuthUser() user) {
+    console.log('Getting profile for auth user: ', user);
+    try {
+      if (!user?.sub) {
+        console.log('Auth user missing sub field: ', user);
+        throw new Error('Auth user missing sub (auth0 id)');
+      }
+      const auth0Id = user.sub;
+      const currentUser = await this.userService.getUserByAuth0Id(auth0Id);
+      if (!currentUser) {
+        console.log('User not found for auth0Id: ', auth0Id);
+        throw new Error('User not found');
+      }
+      return user;
+    } catch (error) {
+      console.log('Error getting profile in controller: ', error);
+      throw error;
+    }
   }
-
-  @Get('devices')
-  getDevices(): string {
-    return this.userService.getDevices();
-  }
-
 }
