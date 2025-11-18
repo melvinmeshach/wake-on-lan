@@ -1,7 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useAuth0 } from "@auth0/auth0-react";
 import DeviceCard from "../components/DeviceCard";
 
-export default function Dashboard() {
+export default function Dashboard(props) {
+  const { isAuthenticated, isLoading } = useAuth0();
+  const user = props.user;
+  
   const [devices, setDevices] = useState([
     { id: 1, name: "Home Server", mac: "00:11:22:33:44:55", status: "offline" },
     { id: 2, name: "NAS", mac: "AA:BB:CC:DD:EE:FF", status: "online" },
@@ -15,7 +19,6 @@ export default function Dashboard() {
       )
     );
 
-    // Simulate wake delay
     setTimeout(() => {
       setDevices((prev) =>
         prev.map((d) =>
@@ -25,9 +28,14 @@ export default function Dashboard() {
     }, 3000);
   };
 
+  if (isLoading) return <div className="text-center mt-10">Loading...</div>;
+
   return (
     <div>
       <h2 className="text-2xl font-semibold mb-4">Your Devices</h2>
+      {!isLoading && user ? (
+        <p className="text-gray-600 mb-6">Welcome, {user.name || user.email}!</p>
+      ): <p className="text-gray-600 mb-6">Loading User!</p>}
       <div className="grid gap-4">
         {devices.map((device) => (
           <DeviceCard key={device.id} device={device} onWake={handleWake} />
