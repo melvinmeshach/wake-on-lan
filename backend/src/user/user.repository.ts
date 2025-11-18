@@ -7,7 +7,7 @@ export class UserRepository {
   constructor(
     @Inject() private readonly prismaService: PrismaService
   ) {}
-  async update(auth0Id: string, user:UserEntity): Promise<UserEntity> {
+  async upsert(auth0Id: string, user:UserEntity): Promise<UserEntity> {
 
     try{
         const createdUser = await this.prismaService.user.upsert({

@@ -1,14 +1,14 @@
-import { AuthModule } from '@auth/auth.module';
 import { Module } from '@nestjs/common';
-import { UserModule } from '@user/user.module';
 import { DeviceController } from '@device/device.controller';
 import { DeviceService } from '@device/device.service';
+import { PrismaModule } from 'prisma/prisma.module';
+import { DeviceRepository } from './device.repository';
 
 @Module({
     imports: [
-    AuthModule,
-    UserModule ],
+        PrismaModule],
     controllers: [DeviceController],
-    providers: [DeviceService]
+    providers: [DeviceService, DeviceRepository],
+    exports: [DeviceService]
 })
-export class DeviceModule {}
+export class DeviceModule { }
