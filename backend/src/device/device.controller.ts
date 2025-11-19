@@ -9,7 +9,10 @@ import { CreateDeviceDto } from './create-device.dto';
 @UseGuards(JwtWithUserInfoGuard)
 export class DeviceController {
   constructor(private readonly deviceService: DeviceService) {}
-
+    @Get()
+    getDevices(@AuthUser() user: any) {
+      return this.deviceService.getDevicesByUserId(user.sub);
+    }
     @Post()
     createDevice(
       @AuthUser() user: any,

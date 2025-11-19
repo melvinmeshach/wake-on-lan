@@ -1,21 +1,55 @@
-// ...existing code...
 import React, { useState, useEffect } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import DeviceCard from "../components/DeviceCard";
 
 export default function Dashboard(props) {
-  const { isAuthenticated, isLoading } = useAuth0();
+  const { isAuthenticated, isLoading, getAccessTokenSilently } = useAuth0();
   const user = props.user;
   
-  const [devices, setDevices] = useState([
-    { id: 1, name: "Home Server", mac: "00:11:22:33:44:55", status: "offline" },
-    { id: 2, name: "NAS", mac: "AA:BB:CC:DD:EE:FF", status: "online" },
-    { id: 3, name: "Gaming PC", mac: "FF:EE:DD:CC:BB:AA", status: "starting" },
-  ]);
+  const [devices, setDevices] = useState([]);
+  const [isLoadingDevices, setIsLoadingDevices] = useState(true);
+  const [error, setError] = useState(null);
 
   // Added state for "add device" form
   const [isAdding, setIsAdding] = useState(false);
   const [newDevice, setNewDevice] = useState({ name: "", mac: "" });
+
+  // Fetch devices from backend
+  useEffect(() => {
+    const fetchDevices = async () => {
+      if (!isAuthenticated) return;
+
+      try {
+        setIsLoadingDevices(true);
+        setError(null);
+        
+        const token = await getAccessTokenSilently();
+        const backend_host = import.meta.env.VITE_BACKEND_HOST;
+
+        const response = await fetch(`${backend_host}/device`, {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch devices: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        setDevices(data);
+      } catch (err) {
+        console.error("Error fetching devices:", err);
+        setError(err.message);
+      } finally {
+        setIsLoadingDevices(false);
+      }
+    };
+
+    fetchDevices();
+  }, [isAuthenticated, getAccessTokenSilently]);
 
   const handleWake = (id) => {
     setDevices((prev) =>
@@ -34,19 +68,41 @@ export default function Dashboard(props) {
   };
 
   // Add device handler
-  const handleAddDevice = (e) => {
+  const handleAddDevice = async (e) => {
     e.preventDefault();
     if (!newDevice.name.trim() || !newDevice.mac.trim()) return;
-    const nextId = devices.length ? Math.max(...devices.map(d => d.id)) + 1 : 1;
-    setDevices(prev => [
-      ...prev,
-      { id: nextId, name: newDevice.name.trim(), mac: newDevice.mac.trim(), status: "offline" }
-    ]);
-    setNewDevice({ name: "", mac: "" });
-    setIsAdding(false);
+
+    try {
+      const token = await getAccessTokenSilently();
+      const backend_host = import.meta.env.VITE_BACKEND_HOST;
+
+      const response = await fetch(`${backend_host}/device`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: newDevice.name.trim(),
+          macAddress: newDevice.mac.trim(),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to add device: ${response.statusText}`);
+      }
+
+      const addedDevice = await response.json();
+      setDevices((prev) => [...prev, addedDevice]);
+      setNewDevice({ name: "", mac: "" });
+      setIsAdding(false);
+    } catch (err) {
+      console.error("Error adding device:", err);
+      setError(err.message);
+    }
   };
 
-  if (isLoading) return <div className="text-center mt-10">Loading...</div>;
+  if (isLoading || isLoadingDevices) return <div className="text-center mt-10">Loading...</div>;
 
   return isAuthenticated ? (
     <div>
@@ -63,6 +119,12 @@ export default function Dashboard(props) {
       {!isLoading && user ? (
         <p className="text-gray-600 mb-6">Welcome, {user.name || user.email}!</p>
       ) : <p className="text-gray-600 mb-6">Loading User!</p>}
+
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          {error}
+        </div>
+      )}
 
       {/* Add device form */}
       {isAdding && (
@@ -97,13 +159,16 @@ export default function Dashboard(props) {
       )}
 
       <div className="grid gap-4">
-        {devices.map((device) => (
-          <DeviceCard key={device.id} device={device} onWake={handleWake} />
-        ))}
+        {devices.length > 0 ? (
+          devices.map((device) => (
+            <DeviceCard key={device.deviceId} device={device} onWake={handleWake} />
+          ))
+        ) : (
+          <p className="text-gray-500">No devices found. Add one to get started!</p>
+        )}
       </div>
     </div>
   ) : (
     <div className="text-center mt-10">Please log in to view your dashboard.</div>
   );
 }
-// ...existing code...

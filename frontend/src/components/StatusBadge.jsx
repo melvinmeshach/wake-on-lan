@@ -11,7 +11,7 @@ export default function StatusBadge({ status }) {
     <span
       className={`text-white text-xs font-medium px-2 py-1 rounded ${colors[status] || "bg-gray-400"}`}
     >
-      {status.toUpperCase()}
+      {status ? status.toUpperCase():""}
     </span>
   );
 }

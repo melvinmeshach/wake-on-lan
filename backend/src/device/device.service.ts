@@ -15,6 +15,7 @@ export class DeviceService {
             const createDeviceData: DeviceEntity = new DeviceEntity({
                 userId,
                 deviceId: uuidv4(),
+                name: deviceData.name,
                 macAddress: deviceData.macAddress ?? null,
                 customId: deviceData.customId ?? null,
                 updatedAt: new Date(),
