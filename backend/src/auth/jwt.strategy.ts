@@ -11,7 +11,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       secretOrKeyProvider: jwksRsa.passportJwtSecret({
         cache: true,
         rateLimit: true,
-        jwksRequestsPerMinute: 5,
+        jwksRequestsPerMinute: 20,
         jwksUri: `${process.env.BACKEND_ISSUER_BASE_URL}.well-known/jwks.json`,
       }),
       audience: process.env.BACKEND_AUDIENCE,
