@@ -9,6 +9,8 @@ export class DeviceEntity {
 
   customId?: string;
 
+  ipAddress?: string;
+
   name!: string;
 
   createdAt!: Date;
@@ -21,6 +23,7 @@ export class DeviceEntity {
     this.userId = data.userId;
     this.macAddress = data.macAddress;
     this.customId = data.customId;
+    this.ipAddress = data.ipAddress;
     this.name = data.name;
     this.createdAt = data.createdAt;
     this.updatedAt = data.updatedAt;

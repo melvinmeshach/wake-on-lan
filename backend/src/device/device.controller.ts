@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Param, Controller, Get, Post, Delete, UseGuards } from '@nestjs/common';
 
 import { JwtWithUserInfoGuard } from '@auth/jwt-auth.guard';
 import { DeviceService } from './device.service';
@@ -18,5 +18,11 @@ export class DeviceController {
       @AuthUser() user: any,
       @Body() createDeviceDto: CreateDeviceDto,){
         return this.deviceService.createDevice(user.sub, createDeviceDto)
+    }
+    @Delete(":deviceId")
+    deleteDevice(
+      @AuthUser() user: any,
+      @Param('deviceId') deviceId: string,){
+        return this.deviceService.deleteDevice(deviceId)
     }
 }

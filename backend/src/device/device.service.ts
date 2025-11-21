@@ -18,6 +18,7 @@ export class DeviceService {
                 name: deviceData.name,
                 macAddress: deviceData.macAddress ?? null,
                 customId: deviceData.customId ?? null,
+                ipAddress: deviceData.ipAddress ?? null,
                 updatedAt: new Date(),
             });
 

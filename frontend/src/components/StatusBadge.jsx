@@ -5,6 +5,8 @@ export default function StatusBadge({ status }) {
     online: "bg-green-500",
     starting: "bg-yellow-500",
     offline: "bg-gray-400",
+    error: "bg-red-500",
+    unknown: "bg-purple-500",
   };
 
   return (

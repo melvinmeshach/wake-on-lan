@@ -11,6 +11,9 @@ export class CreateDeviceDto {
     customId?: string;
 
     @IsString()
+    ipAddress?: string;
+
+    @IsString()
     @IsNotEmpty()
     name: string;
 }

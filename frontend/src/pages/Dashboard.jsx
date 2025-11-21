@@ -1,20 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import DeviceCard from "../components/DeviceCard";
+import AddDeviceForm from "../components/AddDeviceForm";
+import { socket } from "../utils/socker";
 
 export default function Dashboard(props) {
   const { isAuthenticated, isLoading, getAccessTokenSilently } = useAuth0();
   const user = props.user;
-  
+
   const [devices, setDevices] = useState([]);
   const [isLoadingDevices, setIsLoadingDevices] = useState(true);
   const [error, setError] = useState(null);
 
-  // Added state for "add device" form
   const [isAdding, setIsAdding] = useState(false);
-  const [newDevice, setNewDevice] = useState({ name: "", mac: "" });
-
-  // Fetch devices from backend
+  
   useEffect(() => {
     const fetchDevices = async () => {
       if (!isAuthenticated) return;
@@ -51,53 +50,103 @@ export default function Dashboard(props) {
     fetchDevices();
   }, [isAuthenticated, getAccessTokenSilently]);
 
-  const handleWake = (id) => {
+  useEffect(() => {
+    // Subscribe to this wake-task room
+    socket.emit("subscribe", taskId);
+
+    // Listen for status updates
+    socket.on("status", (data) => {
+      setLogs((prev) => [...prev, data]);
+    });
+
+    return () => {
+      socket.off("status");
+    };
+  }, [taskIds]);
+  const listenToDeviceUpdates = (device) => {
+    socket.emit("subscribe", device.macAddress+device.ipAddress);
+  }
+  const handleWake = async (id) => {
+    // find device by either deviceId or id (handles backend/frontend shape differences)
+    const device = devices.find((d) => (d.deviceId || d.id) === id);
+    if (!device) {
+      setError("Device not found");
+      return;
+    }
+
+    const macAddress = device.macAddress ?? null;
+    const ipAddress = device.ipAddress ?? null;
+
+    if (!macAddress) {
+      setError("Device missing MAC address");
+      return;
+    }
+
+    // optimistic UI update
     setDevices((prev) =>
       prev.map((d) =>
-        d.id === id ? { ...d, status: "starting" } : d
+        (d.deviceId || d.id) === id ? { ...d, status: "starting" } : d
       )
     );
 
-    setTimeout(() => {
-      setDevices((prev) =>
-        prev.map((d) =>
-          d.id === id ? { ...d, status: "online" } : d
-        )
-      );
-    }, 3000);
-  };
-
-  // Add device handler
-  const handleAddDevice = async (e) => {
-    e.preventDefault();
-    if (!newDevice.name.trim() || !newDevice.mac.trim()) return;
+    // // keep the visual "starting" -> "online" transition
+    // const setOnlineTimeout = setTimeout(() => {
+    //   setDevices((prev) =>
+    //     prev.map((d) =>
+    //       (d.deviceId || d.id) === id ? { ...d, status: "online" } : d
+    //     )
+    //   );
+    // }, 3000);
 
     try {
       const token = await getAccessTokenSilently();
       const backend_host = import.meta.env.VITE_BACKEND_HOST;
 
-      const response = await fetch(`${backend_host}/device`, {
+      const resp = await fetch(`${backend_host}/wol-connection/wake`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          name: newDevice.name.trim(),
-          macAddress: newDevice.mac.trim(),
-        }),
+        body: JSON.stringify({ macAddress, ipAddress }),
       });
 
-      if (!response.ok) {
-        throw new Error(`Failed to add device: ${response.statusText}`);
+      if (!resp.ok) {
+        throw new Error(`Failed to wake device: ${resp.statusText}`);
       }
 
-      const addedDevice = await response.json();
-      setDevices((prev) => [...prev, addedDevice]);
-      setNewDevice({ name: "", mac: "" });
-      setIsAdding(false);
+      // optionally inspect response
+      const result = await resp.json();
+      console.log("Wake response:", result);
     } catch (err) {
-      console.error("Error adding device:", err);
+      console.error("Error waking device:", err);
+      setError(err.message || "Failed to wake device");
+
+      // revert optimistic status on failure
+      setDevices((prev) =>
+        prev.map((d) =>
+          (d.deviceId || d.id) === id ? { ...d, status: "offline" } : d
+        )
+      );
+      clearTimeout(setOnlineTimeout);
+    }
+  };
+  const handleDelete = async (id) => {
+    try {
+      const token = await getAccessTokenSilently();
+      const backend_host = import.meta.env.VITE_BACKEND_HOST;
+      const response = await fetch(`${backend_host}/device/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`Failed to delete device: ${response.statusText}`);
+      }
+      setDevices((prev) => prev.filter((d) => (d.deviceId || d.id) !== id));
+    } catch (err) {
       setError(err.message);
     }
   };
@@ -126,42 +175,20 @@ export default function Dashboard(props) {
         </div>
       )}
 
-      {/* Add device form */}
       {isAdding && (
-        <form onSubmit={handleAddDevice} className="mb-4 flex gap-2 items-end">
-          <div className="flex flex-col">
-            <label className="text-sm text-gray-600">Name</label>
-            <input
-              value={newDevice.name}
-              onChange={(e) => setNewDevice(n => ({ ...n, name: e.target.value }))}
-              className="border px-2 py-1 rounded"
-              placeholder="Device name"
-              required
-            />
-          </div>
-          <div className="flex flex-col">
-            <label className="text-sm text-gray-600">MAC</label>
-            <input
-              value={newDevice.mac}
-              onChange={(e) => setNewDevice(n => ({ ...n, mac: e.target.value }))}
-              className="border px-2 py-1 rounded"
-              placeholder="AA:BB:CC:DD:EE:FF"
-              required
-            />
-          </div>
-          <button type="submit" className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">
-            Add
-          </button>
-          <button type="button" onClick={() => { setIsAdding(false); setNewDevice({ name: "", mac: "" }); }} className="px-3 py-1 rounded border">
-            Cancel
-          </button>
-        </form>
+        <AddDeviceForm
+          onAdded={(addedDevice) => {
+            setDevices((prev) => [...prev, addedDevice]);
+            setIsAdding(false);
+          }}
+          onCancel={() => setIsAdding(false)}
+        />
       )}
 
       <div className="grid gap-4">
         {devices.length > 0 ? (
           devices.map((device) => (
-            <DeviceCard key={device.deviceId} device={device} onWake={handleWake} />
+            <DeviceCard key={device.deviceId || device.id} device={device} onWake={handleWake} onDelete={handleDelete}/>
           ))
         ) : (
           <p className="text-gray-500">No devices found. Add one to get started!</p>
