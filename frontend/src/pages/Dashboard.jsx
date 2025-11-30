@@ -2,13 +2,27 @@ import React, { useState, useEffect } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import DeviceCard from "../components/DeviceCard";
 import AddDeviceForm from "../components/AddDeviceForm";
-import { socket } from "../utils/socker";
+import { SocketConnection } from "../utils/socket";
 
 export default function Dashboard(props) {
   const { isAuthenticated, isLoading, getAccessTokenSilently } = useAuth0();
   const user = props.user;
-
+  const socketConnection = new SocketConnection();
+  const socket = socketConnection.socket;
+  if(socket)
+    socket.on("status", (data) => {
+      console.log("Status update received:", data);
+      const { deviceId, status } = data;
+      if (deviceId && status) {
+        setStatuses((prevStatuses) => ({
+          ...prevStatuses,
+          [deviceId]: status,
+        }));
+      }
+    });
+  
   const [devices, setDevices] = useState([]);
+  const [statuses, setStatuses] = useState({});
   const [isLoadingDevices, setIsLoadingDevices] = useState(true);
   const [error, setError] = useState(null);
 
@@ -39,6 +53,12 @@ export default function Dashboard(props) {
 
         const data = await response.json();
         setDevices(data);
+        const statusMap = {};
+        data.forEach((device) => {
+          statusMap[device.deviceId] = "CHECKING";
+        });
+        setStatuses(statusMap);
+        data.forEach((device) => subscribeToDeviceUpdates(device));
       } catch (err) {
         console.error("Error fetching devices:", err);
         setError(err.message);
@@ -50,20 +70,7 @@ export default function Dashboard(props) {
     fetchDevices();
   }, [isAuthenticated, getAccessTokenSilently]);
 
-  useEffect(() => {
-    // Subscribe to this wake-task room
-    socket.emit("subscribe", taskId);
-
-    // Listen for status updates
-    socket.on("status", (data) => {
-      setLogs((prev) => [...prev, data]);
-    });
-
-    return () => {
-      socket.off("status");
-    };
-  }, [taskIds]);
-  const listenToDeviceUpdates = (device) => {
+  const subscribeToDeviceUpdates = (device) => {
     socket.emit("subscribe", device.macAddress+device.ipAddress);
   }
   const handleWake = async (id) => {
@@ -76,9 +83,14 @@ export default function Dashboard(props) {
 
     const macAddress = device.macAddress ?? null;
     const ipAddress = device.ipAddress ?? null;
+    const deviceId = device.deviceId ?? null;
 
     if (!macAddress) {
       setError("Device missing MAC address");
+      return;
+    }
+    if(!deviceId){
+      setError("Device missing Device ID");
       return;
     }
 
@@ -108,7 +120,7 @@ export default function Dashboard(props) {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ macAddress, ipAddress }),
+        body: JSON.stringify({ macAddress, ipAddress, deviceId }),
       });
 
       if (!resp.ok) {
@@ -188,7 +200,7 @@ export default function Dashboard(props) {
       <div className="grid gap-4">
         {devices.length > 0 ? (
           devices.map((device) => (
-            <DeviceCard key={device.deviceId || device.id} device={device} onWake={handleWake} onDelete={handleDelete}/>
+            <DeviceCard key={device.deviceId || device.id} device={device} status={statuses[device.deviceId]} onWake={handleWake} onDelete={handleDelete}/>
           ))
         ) : (
           <p className="text-gray-500">No devices found. Add one to get started!</p>

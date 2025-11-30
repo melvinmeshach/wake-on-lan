@@ -17,6 +17,7 @@
       "@app/*": ["src/app/*"],
       "@auth/*": ["src/auth/*"],
       "@device/*": ["src/device/*"],
+      "@prisma/*": ["src/prisma/*"],
       "@user/*": ["src/user/*"],
       "@utils/*": ["src/utils/*"],
       "@wol/*": ["src/wol-connection/*"],

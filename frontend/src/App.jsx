@@ -6,7 +6,7 @@ import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import { useAuth0 } from "@auth0/auth0-react";
 
-export default function App() {
+export default function App(props) {
   const { isAuthenticated, getAccessTokenSilently } = useAuth0();
   const [userData, setUserData] = useState(null);
 
@@ -16,8 +16,8 @@ export default function App() {
         if (!isAuthenticated) return;
   
         try {
-            const backend_host = import.meta.env.VITE_BACKEND_HOST;
-
+          const backend_host = import.meta.env.VITE_BACKEND_HOST;
+          console.log("backend_host: ", backend_host)
           const token = await getAccessTokenSilently();
           const response = await fetch(`${backend_host}/user`, {
             method: "GET",

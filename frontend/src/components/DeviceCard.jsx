@@ -1,19 +1,21 @@
 import React from "react";
 import StatusBadge from "./StatusBadge";
 
-export default function DeviceCard({ device, onWake, onDelete }) {
+export default function DeviceCard({ device, status, onWake, onDelete }) {
   return (
     <div className="bg-white shadow-md rounded-lg p-4 flex justify-between items-center">
       <div>
         <h3 className="font-semibold text-lg">{device.name}</h3>
         <p className="text-gray-500 text-sm">{device.mac}</p>
-        {device.ipAddress && (
+        {device.macAddress && device.ipAddress ? (
+          <p className="text-gray-500 text-sm">IP: {device.ipAddress} <br/>MAC: {device.macAddress}</p>
+        ): device.ipAddress && (
           <p className="text-gray-500 text-sm">IP: {device.ipAddress}</p>
         )}
         {device.customId && (
           <p className="text-gray-500 text-sm">Custom ID: {device.customId}</p>
         )}
-        <StatusBadge status={device.status|| "unknown"} />
+        <StatusBadge status={status||"UNKNOWN"} />
       </div>
       <div className="flex flex-col gap-2">
         <button

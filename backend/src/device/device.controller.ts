@@ -4,14 +4,18 @@ import { JwtWithUserInfoGuard } from '@auth/jwt-auth.guard';
 import { DeviceService } from './device.service';
 import { AuthUser } from '@auth/user.decorator';
 import { CreateDeviceDto } from './create-device.dto';
+import { WOLConnectionService } from '@wol/wol-connection.service';
+import { DeviceEntity } from './device.entity';
 
 @Controller('device')
 @UseGuards(JwtWithUserInfoGuard)
 export class DeviceController {
-  constructor(private readonly deviceService: DeviceService) {}
+  constructor(private readonly deviceService: DeviceService, private readonly wolService: WOLConnectionService) {}
     @Get()
-    getDevices(@AuthUser() user: any) {
-      return this.deviceService.getDevicesByUserId(user.sub);
+    async getDevices(@AuthUser() user: any) {
+      const devices: DeviceEntity[] = await this.deviceService.getDevicesByUserId(user.sub);
+      this.wolService.checkAndSendDeviceStatuses(devices);
+      return devices;
     }
     @Post()
     createDevice(

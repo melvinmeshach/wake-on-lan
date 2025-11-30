@@ -14,7 +14,7 @@ export class WOLConnectionController {
         @AuthUser() user: any,
         @Body() wakeDeviceDto: WakeDeviceDto): Promise<WakeDeviceResponseDto> {
           console.log(`User ${user.sub} requested to wake device with MAC: ${wakeDeviceDto.macAddress} and IP: ${wakeDeviceDto.ipAddress}`);
-          const socketChannel = await this.wolConnectionService.startWakeProcess(wakeDeviceDto.macAddress, wakeDeviceDto.ipAddress);
-          return { socketChannel };
+          const statusSocketChannel = await this.wolConnectionService.startWakeProcess(wakeDeviceDto.deviceId, wakeDeviceDto.macAddress, wakeDeviceDto.ipAddress);
+          return { statusSocketChannel };
         }
 }

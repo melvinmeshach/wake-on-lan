@@ -16,6 +16,12 @@ RUN pnpm install --frozen-lockfile
 # Copy source files
 COPY . .
 
+
+ARG DATABASE_URL
+ENV DATABASE_URL=${DATABASE_URL}
+
+RUN pnpm prisma:generate
+
 # Build NestJS app
 RUN pnpm run build
 
@@ -28,9 +34,10 @@ RUN npm install -g pnpm
 WORKDIR /app
 
 # Copy built files from builder
-COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/dist ./
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY --from=builder /app/generated ./generated
 
 # Install only production dependencies
 RUN pnpm install --prod --frozen-lockfile
@@ -39,4 +46,4 @@ RUN pnpm install --prod --frozen-lockfile
 EXPOSE 5000
 
 # Start the app
-CMD ["pnpm", "run", "start:prod"]
+CMD ["pnpm", "start:prod"]

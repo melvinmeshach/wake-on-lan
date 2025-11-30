@@ -9,7 +9,7 @@ export default function Auth0ProviderWithNavigate({ children }) {
   const clientId = import.meta.env.VITE_AUTH0_CLIENT_ID;
   const audience = import.meta.env.VITE_AUTH0_AUDIENCE;
   const redirectUri = import.meta.env.VITE_AUTH0_REDIRECT_URI;
-
+  console.log("domain", domain)
   const onRedirectCallback = (appState) => {
     navigate(appState?.returnTo || "/dashboard");
   };

@@ -1,6 +1,11 @@
 import { IsBoolean, IsNotEmpty, IsNumber, IsString, Matches } from 'class-validator';
+import { DEVICE_STATUS } from './wol.enums';
 
 export class WakeDeviceDto {
+    @IsString()
+    @IsNotEmpty()
+    deviceId: string;
+
     @IsString()
     @Matches(/^([0-9A-F]{2}:){5}([0-9A-F]{2})$/i, {
         message: 'Invalid MAC address format',
@@ -14,9 +19,13 @@ export class WakeDeviceDto {
 export class WakeDeviceResponseDto {
     @IsString()
     @IsNotEmpty()
-    socketChannel: string;
+    statusSocketChannel: string;
 }
 export class DeviceStatusDto {
+    @IsString()
+    @IsNotEmpty()
+    deviceId!: string;
+
     @IsString()
     @IsNotEmpty()
     macAddress!: string;
@@ -27,7 +36,7 @@ export class DeviceStatusDto {
 
     @IsString()
     @IsNotEmpty()
-    event: string;
+    status: DEVICE_STATUS;
 
     @IsNumber()
     attempt?: number;

@@ -13,13 +13,13 @@ export class WolGateway {
   @WebSocketServer()
   server: Server;
 
-  sendStatus(taskId: string, data: DeviceStatusDto) {
-    this.server.to(taskId).emit('status', { taskId, ...data });
+  sendStatus(statusSocketChannel: string, data: DeviceStatusDto) {
+    this.server.to(statusSocketChannel).emit('status', { statusSocketChannel, ...data });
   }
 
   handleConnection(socket: any) {
-    socket.on('subscribe', (taskId: string) => {
-      socket.join(taskId);
+    socket.on('subscribe', (socketChannel: string) => {
+      socket.join(socketChannel);
     });
   }
 }
